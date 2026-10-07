@@ -1,0 +1,71 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <UseWindowsForms>true</UseWindowsForms>
+    <UseWPF>false</UseWPF>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <!--
+      Nullable reference types are enabled. The new code uses "?" annotations
+      throughout, and the legacy forms have been annotated rather than left to
+      warn on every uninitialised field.
+    -->
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Icon.ico</ApplicationIcon>
+    <StartupObject>TaskbarGroups.App.Program</StartupObject>
+    <RootNamespace>TaskbarGroups.App</RootNamespace>
+    <AssemblyName>TaskbarGroups</AssemblyName>
+    <Product>Taskbar Groups</Product>
+    <AssemblyTitle>Taskbar Groups</AssemblyTitle>
+    <Company>Taskbar Groups</Company>
+    <Copyright>MIT</Copyright>
+    <Version>2.0.0</Version>
+    <FileVersion>2.0.0.0</FileVersion>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+    <!--
+      WFAC010 warns that Windows Forms controls used without being anchored
+      inside a container will not resize with their parent. The existing designer
+      code is a large fixed-layout surface that this warning does not describe
+      accurately, and no control in it is silently broken today. The new views in
+      this project use docking or anchoring; the warning stays suppressed until the
+      legacy forms are replaced.
+    -->
+    <NoWarn>CS0436;CA1416;WFAC010;CS8981;CS0618</NoWarn>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <ApplicationIconFallback>Icon.ico</ApplicationIconFallback>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TaskbarGroups.Core\TaskbarGroups.Core.csproj" />
+    <ProjectReference Include="..\TaskbarGroups.Data\TaskbarGroups.Data.csproj" />
+    <ProjectReference Include="..\TaskbarGroups.Discovery\TaskbarGroups.Discovery.csproj" />
+    <ProjectReference Include="..\TaskbarGroups.Diagnostics\TaskbarGroups.Diagnostics.csproj" />
+    <ProjectReference Include="..\TaskbarGroups.Groups\TaskbarGroups.Groups.csproj" />
+    <ProjectReference Include="..\TaskbarGroups.Icons\TaskbarGroups.Icons.csproj" />
+    <ProjectReference Include="..\TaskbarGroups.Launchers\TaskbarGroups.Launchers.csproj" />
+    <ProjectReference Include="..\TaskbarGroups.Updates\TaskbarGroups.Updates.csproj" />
+    <ProjectReference Include="..\TaskbarGroups.Windows\TaskbarGroups.Windows.csproj" />
+    <ProjectReference Include="..\TaskbarGroups.Workspaces\TaskbarGroups.Workspaces.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      The legacy drag-and-drop and file-dialog helpers. Both packages last shipped
+      in 2015 and still resolve; the ShellObjectCollection path is what lets a
+      Store shortcut be dropped from Explorer, which a FileDrop data format cannot
+      express.
+    -->
+    <PackageReference Include="Microsoft-WindowsAPICodePack-Core" Version="1.1.4" />
+    <PackageReference Include="Microsoft-WindowsAPICodePack-Shell" Version="1.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="app.manifest" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

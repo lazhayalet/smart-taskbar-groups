@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!--
+      Core is the innermost layer. It must never reference UI, Windows-specific
+      interop or a database, so it targets plain net8.0 and references nothing
+      but the BCL. Everything else depends on this project, never the reverse.
+    -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Core models a monitor with System.Drawing.Rectangle and the icon contracts
+      return a Bitmap, so the drawing types are needed here. System.Drawing.Common
+      is Windows-only from .NET 6 onwards, which is fine: this is a Windows-only
+      application and nothing in Core is expected to run anywhere else.
+    -->
+    <PackageReference Include="System.Drawing.Common" Version="8.0.11" />
+  </ItemGroup>
+
+</Project>

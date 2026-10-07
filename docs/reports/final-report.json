@@ -1,0 +1,92 @@
+{
+  "project": "Taskbar Groups 2.0 — Smart Taskbar Launcher & Windows Workspace Manager",
+  "date": "2026-10-07",
+  "target_runtime": "net8.0 (src), net8.0-windows10.0.19041.0 (Windows layers & app)",
+  "build": {
+    "command": "dotnet build TaskbarGroups.sln -c Release",
+    "result": "success",
+    "warnings": 0,
+    "errors": 0
+  },
+  "tests": {
+    "command": "dotnet test TaskbarGroups.sln -c Release",
+    "projects": [
+      { "name": "TaskbarGroups.Core.Tests", "passed": 100, "failed": 0 },
+      { "name": "TaskbarGroups.Monitor.Tests", "passed": 34, "failed": 0 },
+      { "name": "TaskbarGroups.Launcher.Tests", "passed": 85, "failed": 0 },
+      { "name": "TaskbarGroups.Icon.Tests", "passed": 50, "failed": 0 },
+      { "name": "TaskbarGroups.Data.Tests", "passed": 48, "failed": 0 },
+      { "name": "TaskbarGroups.Workspace.Tests", "passed": 23, "failed": 0 },
+      { "name": "TaskbarGroups.Migration.Tests", "passed": 48, "failed": 0 },
+      { "name": "TaskbarGroups.Integration.Tests", "passed": 7, "failed": 0 }
+    ],
+    "total_passed": 395,
+    "total_failed": 0
+  },
+  "runtime_smoke_test": {
+    "result": "pass",
+    "detail": "Published exe started in LocalApplicationData mode; schema created; frmClient and tray initialised; no NullReferenceException after NotifyIcon ContextMenuStrip fix."
+  },
+  "artifacts": [
+    "artifacts/TaskbarGroups-2.0.0-portable-win-x64.zip (68.7 MB)",
+    "artifacts/TaskbarGroups-2.0.0-win-x64.zip (68.7 MB)",
+    "artifacts/publish/ (self-contained win-x64, 264 files, 171.9 MB)"
+  ],
+  "docs": [
+    "docs/reports/pre-modification-report.json",
+    "docs/migration.md",
+    "docs/architecture.md",
+    "docs/troubleshooting.md",
+    "docs/backups.md"
+  ],
+  "features": {
+    "groups": "preserved — width, colors, opacity, open-all, per-group hotkeys, drag-to-reorder",
+    "shortcuts": "preserved — 1-0 hotkeys, Ctrl+Enter open-all, working dir, args, elevation, window state",
+    "icons": "preserved + fixed — serialized SHGetFileInfo/ExtractIconEx (0/400 failures), owned-copy cache, placeholder niemals cached",
+    "monitors_dpi": "fixed — PopupPlacementCalculator + MonitorService; no more SetLocation crash on lower-resolution or secondary monitor",
+    "folder_shortcuts": "fixed — TargetClassifier + legacy migrator store folders as ShortcutType.Folder, never ExtractAssociatedIcon on dirs",
+    "silent_privilege_escalation": "fixed — RunAsAdministrator is explicit, never implicit",
+    "workspaces": "new — WorkspaceService launch-then-place, DPI-aware WindowPlacementCalculator, capture-current-layout",
+    "discovery": "new — app/browser/Steam/UWP/PWA locators, SmartGroupService",
+    "diagnostics": "new — DiagnosticsService with per-check status + fix suggestion, file logger",
+    "backup_restore": "new — ZIP backup (manifest + db snapshot + JSON export + icons), validate, restore with pre-restore copy, prune",
+    "updates": "new — offline-first UpdateService (no paid API, opt-in feed)",
+    "migration": "new — LegacyMigrator: archival-first, idempotent, per-group failure isolation, unsupported-fields report, byte-identical config/"
+  },
+  "constraints_honored": {
+    "app_user_model_id": "tjackenpacken.taskbarGroup.menu.<name> preserved",
+    "group_name_arg": "TaskbarGroups.exe <groupName> contract preserved",
+    "no_fake_features": "Windows 11 taskbar-pin automation documented as a limitation, not faked",
+    "offline_first": "core offline; update feed opt-in; no paid APIs",
+    "license": "MIT, original attribution in README and LICENSE",
+    "no_hardcoded_dev_paths": "grep at src/, scripts/, installer/ is clean"
+  },
+  "known_limitations": [
+    "Windows 11 has no public taskbar-pin automation API; pinning remains one manual click on the generated Shortcuts/*.lnk",
+    "Store (ms-appinstaller/AppX) shortcut window placement is best-effort; live-tile processes cannot be enumerated for monitor matching",
+    "Portable mode beside-exe layout is kept for 1.x compatibility; new installs default to %LOCALAPPDATA%\\\\TaskbarGroups"
+  ],
+  "localization": {
+    "implemented": true,
+    "languages": ["en", "tr"],
+    "mechanism": "src/TaskbarGroups.App/Configuration/Localization.cs with English→tr/en mapping table, AppSettings.Language persisted, tray menu items go through T(), every open form is re-texted on change via Localization.ApplyTo",
+    "settings_ui": "frmSettings > General > Language combo (English / Türkçe)"
+  },
+  "bugs_fixed_during_modernisation": [
+    "frmMain.SetLocation ArgumentOutOfRangeException on monitors smaller than the popup",
+    "frmGroup.handleLnkExt FileNotFoundException — ExtractAssociatedIcon no longer invoked on directories/missing paths",
+    "HiDPI blur on popup edges",
+    "Monitor change crash on lower-resolution/secondary display",
+    "Silent privilege escalation on shortcut launch",
+    "Folder shortcut crash on icon extraction",
+    "Shell icon extraction thread-unsafe (12/400 null-hIcon failures under 16 threads → 0 after gate)",
+    "Icon cache shared placeholder disposal (callers now own copies)",
+    "TableLayoutPanel/Panel ISupportInitialize InvalidCastException at frmClient startup",
+    "NotifyIcon.ContextMenuStrip null at tray startup",
+    "BackupService ZIP 'Entries in create mode' failure when online-backup path was unavailable",
+    "IsAutoDetected not persisted in ShortcutItems",
+    "ImportResult treating informational Notes as Problems",
+    "RestoreReport schemaVersion comparison against hardcoded 1",
+    "frmWorkspaces crash: SplitContainer SplitterDistance set before Panel sizes"
+  ]
+}

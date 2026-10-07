@@ -1,0 +1,363 @@
+{
+  "report": "pre-modification-architecture-report",
+  "generatedFor": "Taskbar Groups 2.0 / Smart Taskbar Launcher & Windows Workspace Manager",
+  "repository": "https://github.com/tjackenpacken/taskbar-groups",
+  "branch": "master",
+  "baselineCommit": "edbd4d9",
+  "environment": {
+    "os": "Windows 11 (10.0.26200), x64",
+    "dotnetSdk": "8.0.425",
+    "dotnetRuntimes": ["8.0.24", "8.0.31", "9.0.13", "10.0.3"],
+    "sdkAvailability": "Only the 8.0.x SDK is installed; 9/10 runtimes exist without a matching SDK. Target framework therefore stays net8.0.",
+    "baselineBuild": "dotnet build TaskbarGroups.sln -c Release -> 0 warnings, 0 errors (before any modification)"
+  },
+
+  "repository_tree": {
+    "root": [
+      ".gitattributes",
+      ".gitignore",
+      "LICENSE",
+      "README.md",
+      "TaskbarGroups.sln",
+      "main/",
+      "docs/"
+    ],
+    "main": [
+      "main/client.cs",
+      "main/client.csproj",
+      "main/App.config",
+      "main/app.manifest",
+      "main/Icon.ico",
+      "main/Classes/Category.cs",
+      "main/Classes/IconFactory.cs",
+      "main/Classes/ImageFunctions.cs",
+      "main/Classes/MainPath.cs",
+      "main/Classes/ProgramShortcut.cs",
+      "main/Classes/ShellLink.cs",
+      "main/Classes/ShellLinkHelper.cs",
+      "main/Classes/handleFolder.cs",
+      "main/Classes/handleWindowsApp.cs",
+      "main/Forms/frmClient.cs",
+      "main/Forms/frmClient.Designer.cs",
+      "main/Forms/frmClient.resx",
+      "main/Forms/frmGroup.cs",
+      "main/Forms/frmGroup.Designer.cs",
+      "main/Forms/frmGroup.resx",
+      "main/Forms/frmMain.cs",
+      "main/Forms/frmMain.Designer.cs",
+      "main/Forms/frmMain.resx",
+      "main/Properties/AssemblyInfo.cs",
+      "main/Properties/Resources.Designer.cs",
+      "main/Properties/Resources.resx",
+      "main/Properties/Settings.Designer.cs",
+      "main/Properties/Settings.settings",
+      "main/Resources/*.png",
+      "main/User controls/ucCategoryPanel.cs",
+      "main/User controls/ucCategoryPanel.Designer.cs",
+      "main/User controls/ucCategoryPanel.resx",
+      "main/User controls/ucProgramShortcut.cs",
+      "main/User controls/ucProgramShortcut.Designer.cs",
+      "main/User controls/ucProgramShortcut.resx",
+      "main/User controls/ucShortcut.cs",
+      "main/User controls/ucShortcut.Designer.cs",
+      "main/User controls/ucShortcut.resx"
+    ]
+  },
+
+  "source_file_inventory": [
+    {
+      "path": "main/client.csproj",
+      "role": "Single SDK-style WinForms project, assembly name 'client', root namespace 'client'",
+      "key_settings": {
+        "TargetFramework": "net8.0-windows10.0.19041.0",
+        "UseWindowsForms": true,
+        "Nullable": "disable",
+        "ImplicitUsings": "disable",
+        "StartupObject": "client.client",
+        "ApplicationManifest": "app.manifest (PerMonitorV2 DPI awareness)",
+        "Version": "7.0.0"
+      },
+      "package_references": [
+        "Microsoft-WindowsAPICodePack-Core 1.1.4",
+        "Microsoft-WindowsAPICodePack-Shell 1.1.4"
+      ],
+      "notes": "Pre-existing uncommitted work had already migrated packages.config -> PackageReference, dropped Windows.winmd and COMReferences in favour of hand-declared interop."
+    },
+    { "path": "TaskbarGroups.sln", "role": "Solution, VS16 format, one project {B6E63AE7-4433-44EC-BCDE-031CD779E8CC}" },
+    {
+      "path": "main/client.cs",
+      "role": "Entry point",
+      "classes": ["client.client (static)"],
+      "methods": ["Main()"],
+      "calls": ["Cursor.Position", "AppContext.BaseDirectory", "Environment.ProcessPath", "Directory.CreateDirectory", "ProfileOptimization.SetProfileRoot", "File.Create/Delete write probe", "SetCurrentProcessExplicitAppUserModelID", "Application.Run(new frmMain(group,cursorX,cursorY))", "Application.Run(new frmClient())"],
+      "current_problem": "Write probe failure silently re-launches the whole app elevated (Verb=runas) with no user consent dialog of its own; JITComp/ProfileOptimization folders are created beside the exe unconditionally (fails on Program Files)."
+    },
+    {
+      "path": "main/app.manifest",
+      "role": "Application manifest",
+      "current_state": "PerMonitorV2 + longPathAware + supportedOS through Windows 10/11",
+      "current_problem": "Already correct for DPI; no Windows 11-specific declarations needed."
+    },
+    {
+      "path": "main/App.config",
+      "role": "Legacy .NET Framework startup stanza",
+      "current_problem": "Declares supportedRuntime v4.0 / .NETFramework 4.7.2 in a net8.0 project; stale and misleading."
+    },
+    {
+      "path": "main/Classes/MainPath.cs",
+      "role": "Global mutable static holding the application directory and the exe path",
+      "fields": ["path", "exeString"],
+      "current_problem": "Global mutable singleton; also the fallback value for ProgramShortcut.WorkingDirectory, which is assigned at field-initialiser time and therefore depends on initialisation order."
+    },
+    {
+      "path": "main/Classes/ProgramShortcut.cs",
+      "role": "Legacy shortcut domain model, XML-serialised into ObjectData.xml",
+      "fields": ["FilePath (get/set)", "isWindowsApp (get/set)", "name (get/set)", "Arguments (public field)", "WorkingDirectory (public field)"],
+      "current_problem": "No Id, no type discrimination other than a bool, no Enabled/SortOrder/elevation/window state, mixes properties and fields, WorkingDirectory initialised from MainPath.exeString."
+    },
+    {
+      "path": "main/Classes/Category.cs",
+      "role": "Legacy group model + XML (de)serialisation + icon cache + group folder creation + .lnk creation",
+      "classes": ["client.Classes.Category"],
+      "methods": ["Category(string path)", "Category()", "CreateConfig(Image)", "createMultiIcon(Image,string)", "LoadIconImage()", "cacheIcons()", "ExtractShortcutIcon(ProgramShortcut)", "GetCacheFileName(ProgramShortcut)", "loadImageCache(ProgramShortcut)", "GetMimeType(Image)"],
+      "depends_on": ["ProgramShortcut", "ImageFunctions", "IconFactory", "ShellLink", "handleFolder", "handleWindowsApp", "Forms.frmGroup"],
+      "called_by": ["frmClient", "frmMain", "ucCategoryPanel", "frmGroup"],
+      "current_problem": "Relative paths resolved against the CWD rather than MainPath; Image/Bitmap/Icon returned without ownership contract (GDI leak risk); GetMimeType comparison against '*.PNG' is locale/case fragile; no validation of the loaded file."
+    },
+    {
+      "path": "main/Classes/ImageFunctions.cs",
+      "role": "Bitmap resize, single-image .ico writer, Color string parsing",
+      "current_problem": "IconFromImage writes an ICO header but leaves the BinaryWriter/MemoryStream undisposed; ResizeImage returns a new Bitmap that callers rarely dispose."
+    },
+    {
+      "path": "main/Classes/IconFactory.cs",
+      "role": "Multi-resolution PNG-in-ICO writer (16..512)",
+      "current_problem": "Validation helper ThrowForInvalidPngs is dead code; buffers dictionary is unnecessary; images are not disposed by the writer."
+    },
+    {
+      "path": "main/Classes/ShellLink.cs",
+      "role": "Creates .lnk files with a per-group AppUserModelID so group popups do not stack on the taskbar",
+      "methods": ["InstallShortcut(...)"],
+      "current_problem": "PropVariantHelper leaks the CoTaskMem string (no PropVariantClear after use); no COM release of the shortcut objects."
+    },
+    {
+      "path": "main/Classes/ShellLinkHelper.cs",
+      "role": "Hand-declared IShellLinkW/IPersistFile interop used to read .lnk target, arguments, working dir, icon location",
+      "current_problem": "GetDisplayName for .lnk returns the file name rather than the shell display name; GetIconLocation drops the icon index; no PIDL/IDList support."
+    },
+    {
+      "path": "main/Classes/handleFolder.cs",
+      "role": "SHGetFileInfo folder icon extraction",
+      "current_problem": "Throws Marshal.GetExceptionForHR when the shell returns nothing; calls Icon.FromHandle twice (second call leaks the intermediate); SHGFI_USEFILEATTRIBUTES not set so a non-existent folder fails."
+    },
+    {
+      "path": "main/Classes/handleWindowsApp.cs",
+      "role": "UWP/Store app icon + display name resolution via PackageManager and AppxManifest.xml",
+      "current_problem": "packages.First() on an empty sequence throws InvalidOperationException; reads %ProgramW6432% which is empty on 32-bit shells; XmlDocument.Load on an empty path throws; Icon.ExtractAssociatedIcon(file).ToBitmap() dereferences a possibly null Icon; no caching of parsed manifests; runs on the UI thread."
+    },
+    {
+      "path": "main/Forms/frmMain.cs",
+      "role": "The group popup window that is launched from the taskbar",
+      "classes": ["client.frmMain : Form"],
+      "methods": ["frmMain(string,int,int)", "frmMain_Load", "SetLocation()", "FindDockedTaskBars()", "LoadCategory()", "BuildShortcutPanel(int,int,ProgramShortcut) [dead]", "OpenFile(string,string,string)", "frmMain_Deactivate", "frmMain_KeyDown", "frmMain_KeyUp"],
+      "current_problem": "P0 - SetLocation(): `taskbarList[i]` is indexed by the Screen.AllScreens loop counter, so any screen with no taskbar desynchronises the list and produces ArgumentOutOfRangeException; the hidden-taskbar branch uses Screen.PrimaryScreen.Bounds.Height (an absolute Y-origin) to compare against mouseClick.Y, which is wrong on multi-monitor and on a secondary monitor below/left of the primary; taskbar rectangles are matched to screens by index, not by geometry; no clamping against WorkingArea; hardcoded 55px/45px/10px/20px/35px/45px metrics."
+    },
+    {
+      "path": "main/Forms/frmClient.cs",
+      "role": "Main dashboard window",
+      "methods": ["frmClient()", "Reload()", "LoadCategory(string)", "Reset()", "cmdAddGroup_Click", "EnterControl/LeaveControl", "getVersionData()", "frmClient_Resize"],
+      "current_problem": "Directory.GetDirectories without error handling; the version check runs a second HttpClient per call and blocks in the ctor via Task.Run(...).Result; MaximumSize pinned to the primary screen; no search, no settings, no diagnostics, no workspace UI."
+    },
+    {
+      "path": "main/Forms/frmGroup.cs",
+      "role": "Group create/edit editor (781 logical lines)",
+      "methods": ["frmGroup(frmClient)", "frmGroup(frmClient,Category)", "frmGroup_Load", "LoadShortcut(ProgramShortcut,int)", "pnlAddShortcut_Click", "pnlDragDropExt", "addShortcut(string,bool)", "DeleteShortcut(ProgramShortcut)", "Swap<T>", "cmdAddGroupIcon_Click", "pnlDragDropImg", "handleIcon(string,string)", "handleLnkExt(string) [static]", "handleExtName(string) [static]", "pnlDragDropEnterExt/Img", "checkExtensions(DragEventArgs,string[])", "cmdExit_Click", "cmdSave_Click", "DeleteGroupFiles(string,string) [static]", "cmdDelete_Click", "cmdWidthUp/Down_Click", "radioCustom/Dark/Light_Click", "numOpacUp/Down_Click", "resetSelection()", "enableSelection(ucProgramShortcut)", "pnlArgumentTextbox_TextChanged", "cmdSelectDirectory_Click", "pnlWorkingDirectory_TextChanged", "getProperDirectory(string)"],
+      "current_problem": "P0 - handleLnkExt(): Icon.ExtractAssociatedIcon is called on icLocation[0] or targetPath with no check that the path exists, is a file, or is even a path at all (http icon locations are only partially filtered), which is the reported FileNotFoundException; it also never disposes the Icon. handleIcon() calls Icon.ExtractAssociatedIcon(file).ToBitmap() for .exe/.ico with no null check and no file existence check. pnlDragDropImg dereferences files[0] without a null/length check. addShortcut() has no type detection: a dropped URL, .bat, .cmd, .ps1 or a Steam URI is stored as a plain EXE target. cmdSave_Click deletes the whole group folder before writing the new one, so a failure mid-save destroys the previous configuration. The 20-shortcut cap reports the error but then continues to open the dialog. Numeric parsing (int.Parse/double.Parse) is unguarded."
+    },
+    {
+      "path": "main/User controls/ucShortcut.cs",
+      "role": "One clickable shortcut cell inside the group popup",
+      "methods": ["ucShortcut_Load", "ucShortcut_Click", "ucShortcut_MouseEnter/Leave"],
+      "current_problem": "Launching is an inline Process.Start with UseShellExecute defaulting to false for non-UWP entries, so folders and .url/.lnk targets fail; no structured error handling beyond a MessageBox; no disabled-item support."
+    },
+    {
+      "path": "main/User controls/ucProgramShortcut.cs",
+      "role": "One editable shortcut row in the group editor",
+      "methods": ["ucProgramShortcut_Load", "MouseEnter/Leave", "cmdNumUp/Down_Click", "cmdDelete_Click", "ucProgramShortcut_Click", "ucDeselected/ucSelected", "lbTextbox_TextChanged", "KeyDown", "txtShortcutName_Click"],
+      "current_problem": "Icon.ExtractAssociatedIcon(...).ToBitmap() with no null/existence guard (P0 crash path); Directory.Exists is checked after File.Exists so a folder falls through to the error image only because File.Exists returns false first; UWP lookup runs synchronously on the UI thread; MessageBox on icon failure blocks the editor."
+    },
+    {
+      "path": "main/User controls/ucCategoryPanel.cs",
+      "role": "One group tile on the dashboard, with mini shortcut icons",
+      "methods": ["ucCategoryPanel(frmClient,Category)", "CreateShortcut(int,int,ProgramShortcut)", "ucNewCategory_Load", "OpenFolder", "cmdDelete_Click", "LoadBitmap(string) [static]", "lblTitle_MouseEnter/Leave"],
+      "current_problem": "Explorer launched with string.Format(\"/select,\\\"{0}\\\"\"...) i.e. command-line concatenation; the .lnk name it looks for (Category.Name with underscores) does not match what Category.CreateConfig writes (name with underscores replaced by spaces); LoadBitmap leaks the BinaryReader/MemoryStream chain."
+    }
+  ],
+
+  "architecture_current_state": {
+    "style": "Single WinForms project, no layering. UI code owns persistence, icon extraction, shell interop and process launching.",
+    "dependency_graph": "frmClient -> frmGroup -> Category -> {ImageFunctions, IconFactory, ShellLink, handleFolder, handleWindowsApp, ProgramShortcut} -> MainPath; frmMain -> ucShortcut -> Category; handleWindowsApp -> ShellLinkHelper; frmGroup -> frmGroup(handleLnkExt) <- Category(ExtractShortcutIcon)",
+    "cycles": "Category.ExtractShortcutIcon calls Forms.frmGroup.handleLnkExt, i.e. the model layer depends back on the UI assembly/namespace. This is the concrete 'Core must not depend on UI' violation.",
+    "global_state": ["MainPath.path", "MainPath.exeString", "handleWindowsApp.fileDirectoryCache", "handleWindowsApp.pkgManger"],
+    "tests": "None. No test project, no test framework, no CI."
+  },
+
+  "data_flow": {
+    "read": "frmClient.Reload -> Directory.GetDirectories(MainPath.path + \"\\config\") -> new Category(dir) -> XmlSerializer.Deserialize(ObjectData.xml) -> frmClient.LoadCategory -> ucCategoryPanel -> Category.loadImageCache per shortcut",
+    "write": "frmGroup.cmdSave_Click -> Category.Name = Regex.Replace(txtGroupName.Text, \"\\\\s+\", \"_\") -> Category.CreateConfig(bitmap) -> writes ObjectData.xml, GroupImage.png, GroupIcon.ico, per-group .lnk into config folder then moves it to Shortcuts/<name with spaces>.lnk -> cacheIcons()",
+    "problems": ["Category writes use relative paths (config\\<name>) resolved against the process CWD", "save deletes the previous group folder before writing the new one (non-atomic, data loss on failure)", "the folder name and the .lnk file name are derived through two different transforms (underscores vs spaces)"]
+  },
+
+  "launcher_flow": {
+    "entry_points": ["ucShortcut.ucShortcut_Click", "frmMain.OpenFile", "frmMain.BuildShortcutPanel.Click (dead code)"],
+    "current_implementation": "frmMain.OpenFile builds ProcessStartInfo{FileName=path, Arguments=arguments, WorkingDirectory=workingDirec} and calls Process.Start. ucShortcut special-cases isWindowsApp with UseShellExecute=true and FileName=\"shell:appsFolder\\<appid>\", otherwise calls frmMain.OpenFile.",
+    "gaps": ["no type detection: everything is treated as an executable file path", "UseShellExecute is false for the non-UWP path, so .lnk, .url, folders and file associations do not resolve", "no elevation support", "no structured result, only a MessageBox with ex.Message", "no validation that the target exists before starting", "Steam/battle.net/EPIC URIs are unsupported", "PWA shortcuts are unsupported", "no script support (.bat/.cmd/.ps1)", "arguments are passed through without quoting checks"]
+  },
+
+  "icon_flow": {
+    "write": "Category.cacheIcons() -> per shortcut: ExtractShortcutIcon() -> Image -> Save(<config>/<group>/Icons/<GetCacheFileName>.png)",
+    "read": "Category.loadImageCache() -> <config>/<group>/Icons/<GetCacheFileName>.png, on miss ExtractShortcutIcon() and write-through",
+    "providers_implicit": ["handleWindowsApp.getWindowsAppIcon (UWP)", "handleFolder.GetFolderIcon (directory)", "frmGroup.handleLnkExt (.lnk)", "Icon.ExtractAssociatedIcon (everything else)"],
+    "gaps": ["Icon.ExtractAssociatedIcon is called on directories/missing files without guards in several places", "Icon objects are never disposed (GDI handle leak)", "no SHA256/stable hash cache key - keys are filename based so moving a shortcut invalidates the cache", "no favicon provider for URL items", "no PWA/Steam providers", "extraction happens synchronously on the UI thread", "no repair/regenerate command"]
+  },
+
+  "monitor_flow": {
+    "current_implementation": "frmMain.SetLocation() + frmMain.FindDockedTaskBars()",
+    "monitor_selection": "for each Screen in Screen.AllScreens, if scr.Bounds.Contains(mouseClick) copy bounds into a local Rectangle and take taskbarList[i] with the loop index i",
+    "taskbar_detection": "Screen.Bounds vs Screen.WorkingArea difference per screen",
+    "defects": [
+      "taskbarList[i] index desynchronisation -> ArgumentOutOfRangeException (the reported P0)",
+      "taskbar rectangles are associated with screens by enumeration index, not by geometry",
+      "hidden-taskbar branch compares mouseClick.Y against Screen.PrimaryScreen.Bounds.Height, ignoring the monitor the cursor is actually on and ignoring negative virtual-screen offsets",
+      "Screen.Bounds.Contains / screen.Left/Top comparisons are made in mixed logical/physical units",
+      "no WorkingArea clamping, no popup-size clamping, no multi-monitor fallback when the cursor is on no screen",
+      "FindDockedTaskBars adds a default Rectangle(0,0,0,0) for every screen that has no dock, inflating the list"
+    ]
+  },
+
+  "xml_schema": {
+    "location": "config/<Group_Name>/ObjectData.xml",
+    "root": "Category",
+    "elements": {
+      "Name": "string (directory name form, spaces replaced by underscores)",
+      "ColorString": "string, ColorTranslator.ToHtml output e.g. #1f1f1f; absent in releases before colour support",
+      "allowOpenAll": "bool",
+      "ShortcutList": "ProgramShortcut[]",
+      "Width": "int (columns per row)",
+      "Opacity": "double 0..100"
+    },
+    "ProgramShortcut": {
+      "FilePath": "string (property)",
+      "isWindowsApp": "bool (property)",
+      "name": "string (property)",
+      "Arguments": "string (public field -> emitted as element)",
+      "WorkingDirectory": "string (public field -> emitted as element)"
+    },
+    "sibling_files": {
+      "GroupIcon.ico": "multi-resolution icon used as the window icon and the .lnk icon",
+      "GroupImage.png": "256x256 copy of the chosen group image",
+      "Icons/*.png": "per-shortcut icon cache",
+      "Shortcuts/<Name with spaces>.lnk": "taskbar entry, arguments = group name, AppUserModelID = tjackenpacken.taskbarGroup.menu.<group name>"
+    },
+    "compatibility_notes": ["ColorString may be missing in older releases and is defaulted in frmGroup", "XmlSerializer requires the public fields, so the model cannot be reshaped without a converter"]
+  },
+
+  "ui_flow": {
+    "startup": "client.Main -> no args -> frmClient (dashboard); 1 arg -> frmMain(groupName, cursorX, cursorY) (popup)",
+    "dashboard": "frmClient: pnlExistingGroups holds one ucCategoryPanel per group; clicking the group tile reveals explorer on the group .lnk; the pencil button opens frmGroup for editing",
+    "editor": "frmGroup: name, width stepper, opacity stepper, colour radios, open-all checkbox, shortcut rows (ucProgramShortcut), argument/working-directory fields for the selected row, group icon picker, drag-drop of .exe/.lnk/folder",
+    "popup": "frmMain: grid of ucShortcut; closes on Deactivate; hotkeys 1-0 select+launch, Ctrl+Enter launches all when allowOpenAll",
+    "gaps": ["no search", "no settings window", "no diagnostics", "no backup", "no tray icon", "no global hotkeys", "no workspaces", "no discovery UI", "no workspaces/workspaces"]
+  },
+
+  "known_bug_mapping": [
+    { "issue": "frmMain.SetLocation ArgumentOutOfRangeException", "root_cause": "taskbarList[i] indexed with the Screen.AllScreens loop counter while FindDockedTaskBars skips screens without a dock", "file": "main/Forms/frmMain.cs", "lines": "83-103", "fix": "replace with MonitorService + TaskbarService that match taskbar rectangles to screens by geometry", "priority": "P0" },
+    { "issue": "frmGroup.handleLnkExt FileNotFoundException", "root_cause": "Icon.ExtractAssociatedIcon called on an unvalidated iconLocation/targetPath string", "file": "main/Forms/frmGroup.cs", "lines": "370-395", "fix": "resolve the .lnk, classify the target (file/dir/uri/app/unavailable), pick a typed icon provider, always fall back", "priority": "P0" },
+    { "issue": "ucProgramShortcut icon crash", "root_cause": "Icon.ExtractAssociatedIcon(...).ToBitmap() with no null/existence check", "file": "main/User controls/ucProgramShortcut.cs", "lines": "56-84", "fix": "route through IIconProvider with a fallback", "priority": "P0" },
+    { "issue": "lower-resolution monitor crash / wrong placement", "root_cause": "hardcoded pixel metrics plus index-based taskbar/screen pairing plus PrimaryScreen.Bounds.Height used as an absolute Y", "file": "main/Forms/frmMain.cs", "lines": "81-198", "fix": "geometry-based MonitorService with WorkingArea clamping and DPI scaling", "priority": "P0" },
+    { "issue": "hardcoded developer paths", "root_cause": "removed in the pre-existing uncommitted work; verified none remain", "file": "(none)", "fix": "keep MainPath/AppDataPaths free of developer-specific roots; add a guard test", "priority": "P0" },
+    { "issue": "HiDPI rendering", "root_cause": "manifest already PerMonitorV2; remaining issue is 32x32 icons drawn into 25-30px boxes with ImageLayout.Stretch", "file": "app.manifest + ucShortcut/ucCategoryPanel", "fix": "provide sized icon variants (16/24/32/48/64/256) and pick by DPI", "priority": "P1" },
+    { "issue": "administrator launch", "root_cause": "no elevation support at all", "file": "main/Forms/frmMain.cs OpenFile", "fix": "RunAsAdministrator on ShortcutItem + ShellExecute runas in the exe/script launchers", "priority": "P1" },
+    { "issue": "PWA support", "root_cause": "no PWA detection or launcher", "file": "(missing)", "fix": "PwaDiscovery + PwaLauncher with Edge/Chrome/Brave profile handling", "priority": "P1" },
+    { "issue": "Office shortcut launch", "root_cause": "UseShellExecute=false means file associations and App Paths are not honoured; .lnk shortcuts are handed to CreateProcess as if they were executables", "file": "main/Forms/frmMain.cs OpenFile, ucShortcut", "fix": "LnkLauncher resolves the link and ShellExecutes; UrlLauncher/ProtocolLauncher for protocol-based entries", "priority": "P1" },
+    { "issue": "Pin to taskbar", "root_cause": "documentation describes a manual right-click pin; Windows blocks reliable programmatic pinning on Windows 11", "file": "README.md", "fix": "TaskbarService detects the generated .lnk, verifies it still exists and offers repair; document the pinning limitation explicitly", "priority": "P1" },
+    { "issue": "TransactionScope-based group delete", "root_cause": "TxF-only atomicity, assembly marked ComVisible(false)", "file": "main/Forms/frmGroup.cs", "status": "already fixed in the working tree (DeleteGroupFiles)", "priority": "P2" },
+    { "issue": "Icon cache never built", "root_cause": "for (int i = ShortcutList.Count; i < 0; i--)", "file": "main/Classes/Category.cs", "status": "already fixed in the working tree", "priority": "P2" }
+  ],
+
+  "technical_debt": [
+    "Category depends on Forms.frmGroup (model -> UI cycle)",
+    "No dependency inversion anywhere: forms construct Category, icons, shell interop and processes directly",
+    "Global mutable statics (MainPath.*, handleWindowsApp caches) make the code untestable",
+    "Undisposed Icon/Bitmap/Image/Graphics across Category, ImageFunctions, handleFolder, frmGroup, ucProgramShortcut",
+    "COM objects in ShellLink/ShellLinkHelper never released; PROPVARIANT CoTaskMem string never cleared",
+    "Empty catch blocks (frmMain key handlers, Client.cs privilege escalation, Category.CreateConfig, frmGroup Save)",
+    "Relative path writes against the process CWD",
+    "XmlSerializer-bound model with public fields",
+    "No logging at all",
+    "No global exception handling",
+    "No tests",
+    "Stale App.config declaring .NET Framework 4.7.2",
+    "Group deletion-before-write on save",
+    "Hardcoded pixel metrics (55, 45, 10, 20, 35, 40, 50) scattered across frmMain, frmGroup, ucCategoryPanel, ucShortcut"
+  ],
+
+  "recommended_migration_order": [
+    "0. baseline inspection (done)",
+    "1. src/TaskbarGroups.Core - domain models, enums, interfaces, validation",
+    "2. src/TaskbarGroups.Launchers - type detection, argument quoting, per-type launchers, LaunchResult",
+    "3. src/TaskbarGroups.Windows - MonitorService, TaskbarService, DpiHelper, WindowManager, StartupService",
+    "4. src/TaskbarGroups.Icons - typed providers, hash cache, fallback",
+    "5. src/TaskbarGroups.Data - SQLite schema, repositories, JSON export/import, backup",
+    "6. src/TaskbarGroups.Groups + LegacyXml migration - ObjectData.xml -> SQLite with a report and a backup",
+    "7. src/TaskbarGroups.Workspaces, Discovery, Diagnostics, Updates",
+    "8. src/TaskbarGroups.App - rewire the legacy WinForms UI onto the new services (no feature loss), add new windows, tray, hotkeys",
+    "9. tests/* xUnit suites",
+    "10. installer/, scripts/, docs/, portable publish"
+  ],
+
+  "files_to_modify": [
+    { "path": "TaskbarGroups.sln", "change": "add every new src/ and tests/ project, move the legacy project to src/TaskbarGroups.App" },
+    { "path": "main/* (moved to src/TaskbarGroups.App/*)", "change": "namespace/root-namespace move, rewire onto the new services, fix the P0 crash paths, add RunAsAdministrator/Enabled/Type, no XML writes" },
+    { "path": "README.md", "change": "document Taskbar Groups 2.0, migration, limitations, data locations" }
+  ],
+
+  "files_to_create": [
+    "src/TaskbarGroups.Core/**",
+    "src/TaskbarGroups.Launchers/**",
+    "src/TaskbarGroups.Windows/**",
+    "src/TaskbarGroups.Icons/**",
+    "src/TaskbarGroups.Data/**",
+    "src/TaskbarGroups.Groups/**",
+    "src/TaskbarGroups.Workspaces/**",
+    "src/TaskbarGroups.Discovery/**",
+    "src/TaskbarGroups.Diagnostics/**",
+    "src/TaskbarGroups.Updates/**",
+    "src/TaskbarGroups.App/Views,ViewModels,Tray,Hotkeys,Services,Configuration (new windows and services)",
+    "tests/TaskbarGroups.*.Tests/**",
+    "installer/**",
+    "scripts/**",
+    "docs/**"
+  ],
+
+  "files_to_delete_only_if_safe": [
+    { "path": "main/App.config", "reason": "declares .NET Framework 4.7.2 inside a net8.0 project; safe to drop once the csproj is finalised" },
+    { "path": "main/Classes/Category.cs (CreateConfig / XML write path)", "reason": "replaced by SQLite + JSON; the read path stays until migration is verified" },
+    { "path": "main/Classes/handleFolder.cs", "reason": "superseded by Icons/FolderIconProvider" }
+  ],
+
+  "files_to_deprecate": [
+    { "path": "main/Classes/IconFactory.cs", "reason": "kept, but re-homed under Icons/Extraction" },
+    { "path": "main/User controls/ucCategoryPanel.LoadBitmap", "reason": "dead/helper with a stream leak" },
+    { "path": "main/Forms/frmMain.BuildShortcutPanel", "reason": "already dead code guarded by a comment" }
+  ],
+
+  "risk_assessment": [
+    { "risk": "Legacy user data loss", "severity": "critical", "mitigation": "XML is only ever read; migration writes SQLite and never deletes config/; a pre-migration ZIP backup is mandatory; migration is idempotent and recorded in MigrationHistory" },
+    { "risk": "Namespace move breaks designer/resx wiring", "severity": "high", "mitigation": "git mv preserving history, mechanical rename, verified by a clean build; designer files and resx base names updated together" },
+    { "risk": "Per-process AppUserModelID shortcut mechanism is what makes taskbar groups work; changing it breaks existing pinned shortcuts", "severity": "critical", "mitigation": "keep the exact AppUserModelID scheme tjackenpacken.taskbarGroup.menu.<name> and the argument contract (group name as argument 1); add a repair action rather than a format change" },
+    { "risk": "Only the .NET 8 SDK is installed, so a .NET 10 target cannot be built or tested here", "severity": "medium", "mitigation": "target net8.0 (current LTS for this SDK) and keep the code free of version-specific APIs; multi-targeting is documented as a one-line change" },
+    { "risk": "WinForms -> WPF rewrite would put every existing feature and all .resx assets at risk", "severity": "high", "mitigation": "keep the shipped WinForms shell, add a UI-agnostic Core, and put new view models in a UI-free assembly so the UI layer can be replaced later without touching behaviour" },
+    { "risk": "Programmatic taskbar pinning is not supported by Windows 11", "severity": "medium", "mitigation": "document the limitation, detect/verify the generated .lnk, provide a repair action; do not claim automation" }
+  ]
+}
