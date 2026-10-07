@@ -1,95 +1,45 @@
 # Taskbar Groups 2.0
 
-A smart taskbar launcher and Windows workspace manager.
+<p align="center">
+  <img src="assets/Icon.ico" width="96" alt="Taskbar Groups icon" />
+</p>
 
-> Ground-up modernisation of the original
-> [Taskbar Groups](https://github.com/tjackenpacken/taskbar-groups) project by
-> tjackenpacken, kept MIT-licensed and backward-compatible with 1.x data.
+| 🇬🇧 English | 🇹🇷 Türkçe |
+|---|---|
+| A smart taskbar launcher & Windows workspace manager. | Akıllı görev çubuğu başlatıcısı ve Windows çalışma alanı yöneticisi. |
 
-## What it does
+> Fork of [tjackenpacken/taskbar-groups](https://github.com/tjackenpacken/taskbar-groups), modernised into a .NET 8 WinForms app with SQLite. Originally by **tjackenpacken**.
 
-- **Groups.** Collect shortcuts into a named group with its own icon, width,
-  colour and opacity, and pin a single taskbar entry that opens a popup with
-  the whole set.
-- **Workspaces.** Open a set of applications and arrange their windows on the
-  right monitors and halves of the screen in one click.
-- **Discovery.** Scan installed applications, browsers, Steam libraries and
-  Microsoft Store packages and turn what you find into groups.
-- **Diagnostics.** A health check page that says why something is broken and
-  what would fix it, instead of a log file and silence.
-- **Backups.** One ZIP per backup, validated before it can be restored, and a
-  pre-restore copy so a bad restore is never terminal.
-- **Migration.** Imports a 1.x `config/` tree automatically, after archiving
-  it, without touching the originals.
+---
 
-## Requirements
+## 🇬🇧 English
 
+### What it does
+- **Groups** — collect shortcuts into a named group with its own icon, width, colour and opacity; pin a single taskbar entry that opens a popup.
+- **Workspaces** — open a set of applications and arrange their windows on the right monitors and screen halves in one click.
+- **Discovery** — scan installed applications, browsers, Steam libraries and Microsoft Store packages into groups.
+- **Diagnostics** — self-checks that say why something is broken and what to do.
+- **Backup & restore** — one ZIP per backup, validated before it can be restored, pre-restore copy kept.
+- **Legacy migration** — imports a 1.x `config/` tree automatically, after archiving it, without touching the originals.
+- **Turkish UI** — Settings → General → Language.
+
+### Requirements
 - Windows 10 (build 17763) or Windows 11, x64.
-- No .NET runtime install is required: the published builds are
-  self-contained.
+- Self-contained publish: no separate .NET runtime install required.
 
-## Download
-
-Two editions, both from `artifacts/`:
-
-| Edition | ZIP | Where data lives |
+### Download & install
+| Edition | File | Where data lives |
 |---|---|---|
 | Installed | `TaskbarGroups-2.0.0-win-x64.zip` | `%LOCALAPPDATA%\TaskbarGroups` |
 | Portable | `TaskbarGroups-2.0.0-portable-win-x64.zip` | `Data/` beside the exe |
 
-The portable ZIP differs only by a `portable.txt` marker file next to
-`TaskbarGroups.exe`.
+1. Extract the ZIP.
+2. Run `TaskbarGroups.exe`.
+3. Create a group, add shortcuts, save.
+4. In `Shortcuts/`, right-click the generated `.lnk` and choose **Pin to taskbar**.
+5. Number keys 1–0 open items; **Ctrl+Enter** opens all when the group allows it.
 
-## Install
-
-Portable: extract anywhere and run `TaskbarGroups.exe`.
-
-Installed:
-
-```powershell
-unzip TaskbarGroups-2.0.0-win-x64.zip
-cd TaskbarGroups
-powershell -ExecutionPolicy Bypass -File ..\installer\install.ps1 -DesktopShortcut
-```
-
-`install.ps1` copies the app to `%LOCALAPPDATA%\Programs\TaskbarGroups`,
-creates a Start Menu shortcut, and optionally a desktop shortcut and startup
-entry. `uninstall.ps1` removes the app and shortcuts but keeps your data.
-
-## Using it
-
-1. Create a group, give it a name and an icon.
-2. Add shortcuts by typing, browsing, drag-and-drop, or discovery.
-3. Save. Exit the group editor.
-4. In `Shortcuts\`, right-click the group's `.lnk` and choose
-   **Pin to taskbar**. Clicking the pinned icon opens the group popup.
-5. Number keys 1–0 open items, **Ctrl+Enter** opens all of them when the
-   group allows it.
-
-## Data layout
-
-| Installed mode | Portable mode |
-|---|---|
-| `%LOCALAPPDATA%\TaskbarGroups\` | `<exe folder>\Data\` |
-
-Inside the data directory:
-
-| Path | Purpose |
-|---|---|
-| `TaskbarGroups.db` | SQLite database (groups, shortcuts, workspaces, settings, icon index, migration history) |
-| `Icons/` | Icon cache (PNG, content-addressed) |
-| `Backups/` | Backup ZIPs |
-| `Logs/` | Rolling text logs and `migration-report.json` |
-| `config/` | Your 1.x data, migrated once and never modified |
-| `Shortcuts/` | The pinned `.lnk` shims the taskbar actually points at |
-| `Temp/` | Staging space for migrations and restores |
-
-The legacy `config/` folder is read by the migrator on first run, archived to
-`Backups/legacy-config-*.zip`, and never written to again. Everything the app
-needs to keep working is in SQLite.
-
-## Building from source
-
+### Build from source
 ```powershell
 dotnet build TaskbarGroups.sln -c Release
 dotnet test TaskbarGroups.sln -c Release
@@ -97,31 +47,59 @@ powershell -ExecutionPolicy Bypass -File scripts\publish.ps1
 powershell -ExecutionPolicy Bypass -File scripts\pack-portable.ps1
 powershell -ExecutionPolicy Bypass -File scripts\pack-install.ps1
 ```
+Requires the .NET 8 SDK.
 
-Requires the .NET 8 SDK (`net8.0-windows10.0.19041.0`). The SDK is on
-`PATH` in CI images and from `dotnet`/`dotnet.ps1` locally.
+### Known limitations
+- Windows 11 has no public taskbar-pin automation API → pinning stays one manual click on the generated `.lnk`.
+- Microsoft Store shortcut window placement in workspaces is best-effort.
+- `Shortcuts/` paths are baked into pinned taskbar entries; moving a portable folder requires re-pinning.
 
-## Known limitations
+### License
+MIT — see [LICENSE](LICENSE). Original copyright tjackenpacken; this fork is a derivative work under the same terms.
 
-- **Taskbar pin automation.** Windows 11 does not expose a public API for
-  pinning; the app still creates the shim `.lnk` files in `Shortcuts/` and the
-  user pins once. A future release may add a documented, supported pinning
-  path if one appears.
-- **Microsoft Store (`shell:AppsFolder\...`) shortcuts** are launched through
-  `explorer.exe` and cannot be monitored for a window title in the way a real
-  executable can, so workspace placement is best-effort for those items.
-- **Portable mode** writing a group pins from a path under `Temp/`; moving the
-  whole portable folder invalidates pinned taskbar entries until they are
-  re-pinned.
+---
 
-## Documentation
+## 🇹🇷 Türkçe
 
-- [docs/migration.md](docs/migration.md) — what happens to 1.x data
-- [docs/architecture.md](docs/architecture.md) — the project layout and why
-- [docs/troubleshooting.md](docs/troubleshooting.md) — common problems and fixes
-- [docs/backups.md](docs/backups.md) — backup/restore/export formats
+### Ne yapar
+- **Gruplar** — kısayolları adlandırılmış bir grupta topla; kendi ikonu, genişliği, rengi ve opaklığı olur; tek bir görev çubuğu girdisine sabitleyip açılır menüyü kullanırsın.
+- **Çalışma alanları** — bir grup uygulamayı tek tıkla açıp pencerelerini doğru monitöre ve ekran bölümüne yerleştirir.
+- **Keşif** — kurulu uygulamaları, tarayıcıları, Steam kütüphanelerini ve Microsoft Store paketlerini gruplara dönüştürür.
+- **Tanılama** — bir şeyin neden bozuk olduğunu ve ne yapman gerektiğini söyleyen öz kontroller.
+- **Yedekleme & geri yükleme** — tek ZIP yedek; geri yüklenmeden önce doğrulanır, önceki veri için kopya alınır.
+- **Eski sürümden geçiş** — 1.x `config/` ağacını otomatik içe aktarır; önce arşivler, asıllara dokunmaz.
+- **Türkçe arayüz** — Ayarlar → Genel → Dil.
 
-## License
+### Gereksinimler
+- Windows 10 (build 17763) veya Windows 11, x64.
+- Bağımsız yayın: ayrıca .NET runtime kurmanıza gerek yok.
 
-MIT. See [LICENSE](LICENSE). Original project copyright tjackenpacken; this
-modernisation is a derivative work under the same terms.
+### İndir & kurulum
+| Sürüm | Dosya | Verinin yeri |
+|---|---|---|
+| Kurulum | `TaskbarGroups-2.0.0-win-x64.zip` | `%LOCALAPPDATA%\TaskbarGroups` |
+| Taşınabilir | `TaskbarGroups-2.0.0-portable-win-x64.zip` | exe'nin yanında `Data/` |
+
+1. ZIP'i çıkar.
+2. `TaskbarGroups.exe`'yi çalıştır.
+3. Grup oluştur, kısayolları ekle, kaydet.
+4. `Shortcuts/` klasöründe oluşan `.lnk` dosyasına sağ tıkla → **Görev çubuğuna sabitle**.
+5. 1–0 tuşları öğeleri açar; grup izin veriyorsa **Ctrl+Enter** hepsini açar.
+
+### Kaynaktan derle
+```powershell
+dotnet build TaskbarGroups.sln -c Release
+dotnet test TaskbarGroups.sln -c Release
+powershell -ExecutionPolicy Bypass -File scripts\publish.ps1
+powershell -ExecutionPolicy Bypass -File scripts\pack-portable.ps1
+powershell -ExecutionPolicy Bypass -File scripts\pack-install.ps1
+```
+.NET 8 SDK gerekir.
+
+### Bilinen sınırlamalar
+- Windows 11'in public görev çubuğu sabitleme API'si yoktur → sabitleme, oluşan `.lnk` dosyasına tek tıkla manuel kalır.
+- Microsoft Store kısayollarının çalışma alanlarında pencere yerleşimi "elinden gelenin en iyisi" düzeydedir.
+- `Shortcuts/` yolları sabitlenen görev çubuğu girdilerine gömülüdür; taşınabilir klasörü taşımak için yeniden sabitlemek gerekir.
+
+### Lisans
+MIT — bkz. [LICENSE](LICENSE). Orijinal telif tjackenpacken; bu fork aynı şartlarla türetilmiş bir çalışmadır.
